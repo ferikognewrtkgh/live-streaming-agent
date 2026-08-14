@@ -1,0 +1,182 @@
+# 抖音弹幕接入指南
+
+## 概览
+
+本方案通过 DouyinBarrageGrab 抓取抖音直播弹幕，经过过滤和优先级排序后，
+注入到 Open-LLM-VTuber 的对话系统，让 AI VTuber 能实时回复直播间弹幕。
+
+```
+DouyinBarrageGrab (独立程序, ws://127.0.0.1:8888)
+        ↓ WebSocket 推送弹幕 JSON
+barrage_adapter.py (本模块)
+    ├── 过滤: 去重/敏感词/刷屏/无意义内容
+    ├── 优先级: 礼物 > 粉丝团 > 普通
+    └── 节奏控制: 每 N 秒消费一条
+        ↓ 伪装为 text-input 消息
+Open-LLM-VTuber (websocket_handler.py)
+        ↓
+    LLM → TTS → Live2D 播报
+```
+
+## 第一步: 安装 DouyinBarrageGrab
+
+1. 前往 https://github.com/ape-byte/DouyinBarrageGrab/releases
+2. 下载最新发行版 (WssBarrageService.exe)
+3. 解压到任意目录
+
+### 配置 DouyinBarrageGrab
+
+编辑 `WssBarrageService.exe.config`:
+- 确保 WebSocket 推送地址是 `ws://127.0.0.1:8888` (默认端口)
+- 如果改了端口, 后面 barrage_adapter 的配置也要对应改
+
+### 启动
+
+1. 打开浏览器或抖音直播伴侣, 进入你要监听的直播间
+2. 双击运行 `WssBarrageService.exe`
+3. 控制台应该显示已连接, 能看到弹幕数据流过
+
+## 第二步: 安装 Python 依赖
+
+在你的 Open-LLM-VTuber 项目虚拟环境中:
+
+```bash
+pip install websockets --break-system-packages
+```
+
+## 第三步: 放置文件
+
+将 `barrage_adapter.py` 复制到:
+
+```
+C:\Users\Administrator\Downloads\vtuber-demo\src\open_llm_vtuber\barrage_adapter.py
+```
+
+## 第四步: 修改 server.py
+
+打开 `src/open_llm_vtuber/server.py`, 做以下修改:
+
+### 4.1 添加 import
+
+在文件顶部的 import 区域添加:
+
+```python
+from .barrage_adapter import start_barrage_adapter, stop_barrage_adapter, BarrageConfig
+```
+
+### 4.2 在服务启动时初始化弹幕适配器
+
+找到 `__init__` 方法里初始化完成的位置 (通常在所有 mount 之后),
+添加弹幕适配器的启动代码。
+
+具体位置: 找到类似 `self.app.mount("/", ...)` 的最后一行 mount,
+在它之后添加:
+
+```python
+        # ========== 弹幕适配器 ==========
+        @self.app.on_event("startup")
+        async def _start_barrage():
+            barrage_config = BarrageConfig(
+                ws_url="ws://127.0.0.1:8888",  # DouyinBarrageGrab 地址
+                consume_interval=3.0,            # 每 3 秒处理一条弹幕
+                min_content_length=2,            # 最短弹幕长度
+                gift_trigger_enabled=True,       # 礼物消息触发回复
+                gift_min_diamonds=1,             # 最低钻石数
+            )
+            await start_barrage_adapter(self.ws_handler, barrage_config)
+
+        @self.app.on_event("shutdown")
+        async def _stop_barrage():
+            await stop_barrage_adapter()
+```
+
+注意: `self.ws_handler` 是你项目中 WebSocketHandler 的实例,
+具体变量名看你 server.py 里怎么命名的, 可能叫 `self.websocket_handler`
+或别的名字, 请对应修改。
+
+### 4.3 确认 ws_handler 变量名
+
+在 server.py 中搜索 `WebSocketHandler`, 找到它被实例化的地方, 例如:
+
+```python
+self.ws_handler = WebSocketHandler(default_context_cache)
+```
+
+确保第 4.2 步中用的变量名和这里一致。
+
+## 第五步: 测试
+
+### 启动顺序
+
+1. 启动 DouyinBarrageGrab
+2. 浏览器打开直播间 (确保弹幕在流)
+3. 启动 Open-LLM-VTuber: `python run_server.py`
+4. 浏览器打开 VTuber 页面 (http://127.0.0.1:12393)
+
+### 预期日志
+
+```
+[弹幕] 启动适配器, 连接: ws://127.0.0.1:8888
+[弹幕] 等待浏览器客户端连接...
+[弹幕] 已连接 DouyinBarrageGrab: ws://127.0.0.1:8888
+[弹幕] 已绑定到客户端: a41e5d59-xxxx-xxxx-xxxx
+[弹幕] 入队 (P3): [弹幕] 小明: 主播你好啊
+[弹幕] 处理: [弹幕] 小明: 主播你好啊
+[弹幕] 注入消息到 a41e5d59-xxxx: [弹幕] 小明: 主播你好啊...
+```
+
+然后你应该能看到 AI 回复这条弹幕, 包括语音播报和 Live2D 表情。
+
+## 配置参数说明
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| ws_url | ws://127.0.0.1:8888 | DouyinBarrageGrab WebSocket 地址 |
+| consume_interval | 3.0 | 弹幕消费间隔(秒), 越大回复越慢但更稳定 |
+| min_content_length | 2 | 最短弹幕长度, 过滤 "1" "6" 等 |
+| max_content_length | 200 | 最长弹幕长度, 过滤刷屏 |
+| max_queue_size | 50 | 队列最大长度, 满时丢弃新弹幕 |
+| dedup_window_seconds | 30 | 重复内容检测窗口(秒) |
+| max_per_user_in_window | 3 | 窗口内单用户最多发言数 |
+| gift_trigger_enabled | True | 是否对礼物消息触发回复 |
+| gift_min_diamonds | 1 | 触发回复的最低钻石数 |
+| prefix_template | [弹幕] {nickname}: {content} | 注入到 LLM 的消息格式 |
+
+## 常见问题
+
+### Q: 弹幕太多, AI 回复不过来
+A: 增大 `consume_interval` (比如改成 5-8 秒), 或减小 `max_queue_size`。
+队列满时低优先级弹幕会自动丢弃。
+
+### Q: 想让 AI 优先回复刷礼物的观众
+A: 已内置。礼物消息优先级高于普通弹幕, 会被优先处理。
+调整 `gift_min_diamonds` 控制触发门槛。
+
+### Q: 连接不上 DouyinBarrageGrab
+A: 确认:
+1. DouyinBarrageGrab 已启动且显示"服务已启动"
+2. 端口一致 (默认 8888)
+3. 没有防火墙阻拦
+
+### Q: 弹幕和麦克风输入冲突
+A: 弹幕通过 text-input 注入, 和麦克风的 mic-audio-end 走不同通道。
+但如果你同时在说话, 可能会出现 AI 同时处理两条输入的情况。
+建议直播时关闭麦克风输入, 或在 Orchestrator (阶段4) 中做互斥控制。
+
+### Q: 想添加更多敏感词
+A: 修改 BarrageConfig 的 `blocked_words` 列表, 或从文件加载:
+```python
+with open("blocked_words.txt", "r", encoding="utf-8") as f:
+    words = [line.strip() for line in f if line.strip()]
+
+config = BarrageConfig(blocked_words=words)
+```
+
+## 后续扩展 (阶段 2-5)
+
+本模块已预留了扩展点:
+
+- **阶段 2 (规则过滤)**: `BarrageFilter` 类可扩展更多过滤规则
+- **阶段 3 (优先级队列)**: `Priority` 类和 `_classify_priority` 方法可扩展
+- **阶段 4 (Orchestrator)**: 将 `_inject_callback` 改为发送到 Orchestrator 而非直接调用
+- **阶段 5 (Event Loop)**: 弹幕统计数据 (频率/情绪) 可作为 Event Loop 的输入源

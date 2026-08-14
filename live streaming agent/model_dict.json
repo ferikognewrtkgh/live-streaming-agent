@@ -1,0 +1,75 @@
+[
+    {
+        "name": "Live Streaming Agent",
+        "description": "white dog model for vts",
+        "url": "/live2d-models/尤里/尤里1.model3.json",
+        "kScale": 1.5,
+        "initialXshift": 0,
+        "initialYshift": 0,
+        "kXOffset": 1150,
+        "defaultEmotion" : 0,
+        "idleMotionGroupName": "idle",
+        "emotionMap": {
+            "mad": "Exp-2生气motion",
+            "thanks": {
+                "type": "motion",
+                "group": "emotion_thanks",
+                "file": "motions/motion4-开心动作.motion3.json",
+                "priority": 3
+            },
+            "exciting": {
+                "type": "motion",
+                "group": "emotion_laugh",
+                "file": "motions/motion5卖萌动作.motion3.json",
+                "priority": 3
+            },
+            "happy": "Exp-11咧嘴笑",
+            "cry": {
+                "type": "motion",
+                "group": "emotion_cry",
+                "file": "motions/Exp-1哭哭motion.motion3.json",
+                "priority": 3
+            },
+            "sad": {
+                "type": "motion",
+                "group": "emotion_cry",
+                "file": "motions/Exp-1哭哭motion.motion3.json",
+                "priority": 3
+            },
+            "speechless": "Exp-9流汗",
+            "cute": "Exp-8一字眼猫猫嘴",
+            "wink": "Exp-6wink",
+            "star-eyes": "Exp-7星星眼",
+            "doubt": "Exp-4疑惑motion",
+            "shy":"Exp-3腮红",
+            "black": "Exp-5腹黑"
+        },
+        "motionMap": {
+            "sleep": {
+                "type": "motion",
+                "group": "state_sleep",
+                "file": "motions/motion2-休息动作2.motion3.json",
+                "loop": false,
+                "duration": 8.4,
+                "priority": 3
+            },
+            "wake": {
+                "type": "motion",
+                "group": "state_wake",
+                "file": "motions/motion2-休息结束2.motion3.json",
+                "loop": false,
+                "duration": 11.833,
+                "priority": 3
+            }
+        },
+
+        "tapMotions": {
+            "head": {
+                "idle": 30
+            },
+            "body": {
+                "idle": 30
+            }
+        }
+    }
+]

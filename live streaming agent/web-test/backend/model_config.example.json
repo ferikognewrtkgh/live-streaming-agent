@@ -1,0 +1,35 @@
+{
+  "active_provider": "deepseek",
+  "providers": {
+    "deepseek": {
+      "model": "deepseek-v4-pro",
+      "api_base_url": "https://api.deepseek.com/v1",
+      "api_key": ""
+    },
+    "doubao": {
+      "model": "doubao-seed-2-0-lite-260215",
+      "api_base_url": "https://ark.cn-beijing.volces.com/api/v3",
+      "api_key": ""
+    },
+    "qwen": {
+      "model": "qwen3.6-flash",
+      "api_base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "api_key": ""
+    },
+    "kimi": {
+      "model": "kimi-k2.6",
+      "api_base_url": "https://api.moonshot.cn/v1",
+      "api_key": ""
+    },
+    "zhipu": {
+      "model": "glm-5.2",
+      "api_base_url": "https://open.bigmodel.cn/api/paas/v4",
+      "api_key": ""
+    },
+    "tencent-yuanbao": {
+      "model": "hy3",
+      "api_base_url": "https://tokenhub.tencentmaas.com/v1",
+      "api_key": ""
+    }
+  }
+}

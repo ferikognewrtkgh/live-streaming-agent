@@ -1,0 +1,92 @@
+[project]
+name = "open-llm-vtuber"
+version = "1.2.1"
+description = "Talk to any LLM with hands-free voice interaction, voice interruption, and Live2D taking face running locally across platforms"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "anthropic>=0.40.0",
+    "azure-cognitiveservices-speech>=1.41.1",
+    "chardet>=5.2.0",
+    "edge-tts>=7.0.0",
+    "elasticsearch-dsl>=8.15.0,<9",
+    "fastapi[standard]>=0.115.8",
+    "groq>=0.13.0",
+    "httpx>=0.28.1",
+    "langdetect>=1.0.9",
+    "loguru>=0.7.2",
+    "mcp[cli]>=1.6.0",
+    "numpy>=1.26.4,<2",
+    "onnxruntime>=1.20.1",
+    "openai>=1.57.4",
+    "pre-commit>=4.1.0",
+    "pydub>=0.25.1",
+    "pysbd>=0.3.4",
+    "pyttsx3>=2.98",
+    "pyyaml>=6.0.2",
+    "requests>=2.32.3",
+    "ruamel-yaml>=0.18.10",
+    "ruff>=0.8.6",
+    "scipy>=1.14.1",
+    "sentence-transformers>=3.0.0",
+    "sherpa-onnx>=1.10.39",
+    "silero-vad==5.1.2",
+    "soundfile>=0.12.1",
+    "tomli>=2.2.1",
+    "torch==2.2.2; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "torch>=2.6.0; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "torch>=2.6.0; sys_platform != 'darwin'",
+    "torchaudio==2.2.2; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "torchaudio==2.6.0; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "torchaudio==2.6.0; sys_platform != 'darwin'",
+    "tqdm>=4.67.1",
+    "uvicorn[standard]>=0.33.0",
+    "websocket-client>=1.8.0",
+    "letta-client>=0.1.100",
+    "duckduckgo-mcp-server>=0.1.1",
+    "pyopengl>=3.1.10",
+    "pyopengl-accelerate>=3.1.10",
+    "live2d-py>=0.6.1.1",
+    "pygame>=2.6.1",
+    "pyqt5==5.15.10",
+    "pyqt5-qt5==5.15.2",
+    "uiautomation>=2.0.29; sys_platform == 'win32'",
+    "pywinauto>=0.6.9; sys_platform == 'win32'",
+    "google-genai>=2.8.0",
+    "aiohttp>=3.12",
+    "volcengine-python-sdk[ark]>=5.0.36",
+    "soundcard>=0.4.6",
+]
+
+[project.optional-dependencies]
+bilibili = [
+    # 放宽约束: google-genai 需要 aiohttp>=3.12 (用到 ClientConnectorDNSError)
+    # aiohttp 3.12+ 要求 yarl>=1.17, 所以这里 yarl 也一起放宽
+    # 这两个库 3.9→3.12 / 1.9→1.17 都是向后兼容, bilibili 逻辑不受影响
+    "aiohttp>=3.9.0",
+    "Brotli~=1.1.0",
+    "yarl>=1.9.3",
+]
+
+[tool.pixi.project]
+channels = ["conda-forge"]
+platforms = ["win-64", "linux-64"]
+
+[tool.pixi.pypi-dependencies]
+open-llm-vtuber = { path = ".", editable = true }
+
+[tool.pixi.dependencies]
+cudnn = ">=8.0,<9"
+cudatoolkit = ">=11.0,<12"
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.ruff.lint]
+# Ignore E402 (module level import not at top of file) for the run_bilibili_live.py script
+per-file-ignores = { "scripts/run_bilibili_live.py" = ["E402"] }
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.20.0",
+]
